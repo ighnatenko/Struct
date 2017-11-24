@@ -15,17 +15,32 @@ class Factory
       end
 
       # ==
-      def ==(other)
-        other.class == self.class && other.values == self.values
+      def ==(other_class)
+        other_class.class == self.class && other_class.values == values
       end
 
-      # []
       def [](key)
-        key.is_a?(Integer) ? to_a[key] : send(key.to_sym)
+        if key.is_a? Integer
+          if key < 0 || key > length
+            raise IndexError
+          else
+            to_a[key]
+          end
+        elsif key.is_a? Float
+          to_a[key.to_i]
+        else
+          send(key.to_sym)
+        end
       end
 
       # []=
       def []=(key, value)
+        if key.is_a? Integer
+          raise IndexError if key < 0 || key > length
+        end
+
+        raise NameError unless instance_variable_get("@#{key}")
+
         instance_variable_set("@#{key}", value)
       end
 
@@ -34,7 +49,7 @@ class Factory
         keys.inject(self) do |item, key|
           begin
             item[key]
-          rescue NoMethodError
+          rescue NameError
             nil
           end
         end
@@ -99,6 +114,10 @@ class Factory
 
       # values_at
       def values_at *indexes
+        indexes.each do |index|
+          raise IndexError if index < 0 || index > instance_variables.length
+        end
+
         to_a.values_at(*indexes)
       end
 
